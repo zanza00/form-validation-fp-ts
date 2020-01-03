@@ -1,7 +1,8 @@
 import { pipe } from "fp-ts/lib/pipeable";
 import { array } from "fp-ts/lib/Array";
 import * as E from "fp-ts/lib/Either";
-import * as NEA from "fp-ts/es6/NonEmptyArray";
+import * as NEA from "fp-ts/lib/NonEmptyArray";
+import * as R from "fp-ts/lib/Record";
 
 type SingleError = { field: string; error: string };
 
@@ -17,7 +18,10 @@ function lift<A>(
     );
 }
 
-export function validateErrorMap<D extends object, E extends SingleError>(
+export function validateErrorMap<
+  D extends Record<string, unknown>,
+  E extends SingleError
+>(
   rules: Array<(data: D) => E.Either<E, D>>
 ): (data: D) => E.Either<Record<string, string[]>, D> {
   return data =>
@@ -26,31 +30,24 @@ export function validateErrorMap<D extends object, E extends SingleError>(
         rules.map(valid => lift(valid)(data))
       ),
       E.bimap(
-        errs => collectErrors(errs),
-        goodData => {
-          console.log(goodData);
-          return data;
-        }
+        errs => collectErrors(data, errs),
+        () => data
       )
     );
 }
 
 export function collectErrors(
-  err: NEA.NonEmptyArray<{ field: string; error: string }>
+  data: Record<string, unknown>,
+  err: NEA.NonEmptyArray<SingleError>
 ): Record<string, string[]> {
-  return err.reduce(
-    (prev, current) => {
-      const currError = prev[current.field];
-      // console.log("currError", { currError, prev, current });
-      return {
-        ...prev,
-        [current.field]: [...currError, current.error]
-      };
-    },
-    {
-      email: [],
-      password1: [],
-      password2: []
-    } as Record<string, string[]>
+  const emptyErrors = pipe(
+    data,
+    R.map(() => [] as string[])
   );
+  return err.reduce((prev, current) => {
+    return {
+      ...prev,
+      [current.field]: [...prev[current.field], current.error]
+    };
+  }, emptyErrors);
 }
