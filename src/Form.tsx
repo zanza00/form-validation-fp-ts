@@ -20,7 +20,9 @@ export default function Form() {
   };
 
   const [formState, setFormState] = React.useState(initialState);
-  const [errorMap, setErrorMap] = React.useState(initialErrors);
+  const [errorMap, setErrorMap] = React.useState<Record<string, string[]>>(
+    initialErrors
+  );
   const [validData, setValidData] = React.useState<Record<string, string>>({});
   const [debug, setDebug] = React.useState({ form: {}, errors: {} });
 
@@ -101,6 +103,14 @@ export default function Form() {
     );
   }
 
+  function fillWithGoodData() {
+    setFormState({
+      email: "c@example.com",
+      password1: "p@aaSw0rd!",
+      password2: "p@aaSw0rd!"
+    });
+  }
+
   return (
     <div>
       <div>
@@ -152,22 +162,27 @@ export default function Form() {
       <button onClick={() => validateAndSend(formState)}>Submit</button>
       <div>
         <ul>
-          {Object.values(validData).map((key, value) => {
+          {Object.entries(validData).map(([key, value]) => {
             return (
               <li key={key}>
-                `${key} -> ${value}`
+                {key} -> {value}
               </li>
             );
           })}
         </ul>
       </div>
       <div>
-        debug info: <br />
-        form:
-        <code>{JSON.stringify(debug.form, null, 2)}</code>
-        <br />
-        errors:
-        <code>{JSON.stringify(debug.errors, null, 2)}</code>
+        <div>
+          debug info: <br />
+          form:
+          <code>{JSON.stringify(debug.form, null, 2)}</code>
+          <br />
+          errors:
+          <code>{JSON.stringify(debug.errors, null, 2)}</code>
+        </div>
+        <div>
+          <button onClick={fillWithGoodData}>Fill Form with good data</button>
+        </div>
       </div>
     </div>
   );
