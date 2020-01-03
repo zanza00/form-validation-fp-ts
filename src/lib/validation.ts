@@ -3,11 +3,13 @@ import { array } from "fp-ts/lib/Array";
 import * as E from "fp-ts/lib/Either";
 import * as NEA from "fp-ts/es6/NonEmptyArray";
 
-const applicativeValidation = E.getValidation(NEA.getSemigroup<object>());
+type SingleError = { field: string; error: string };
 
-function lift<E, A>(
-  check: (a: A) => E.Either<E, A>
-): (a: A) => E.Either<NEA.NonEmptyArray<E>, A> {
+const applicativeValidation = E.getValidation(NEA.getSemigroup<SingleError>());
+
+function lift<A>(
+  check: (a: A) => E.Either<SingleError, A>
+): (a: A) => E.Either<NEA.NonEmptyArray<SingleError>, A> {
   return a =>
     pipe(
       check(a),
@@ -15,7 +17,7 @@ function lift<E, A>(
     );
 }
 
-export function validateErrorMap<D extends object, E extends object>(
+export function validateErrorMap<D extends object, E extends SingleError>(
   rules: Array<(data: D) => E.Either<E, D>>
 ): (data: D) => E.Either<Record<string, string[]>, D> {
   return data =>
@@ -23,11 +25,13 @@ export function validateErrorMap<D extends object, E extends object>(
       array.sequence(applicativeValidation)(
         rules.map(valid => lift(valid)(data))
       ),
-      E.map(() => {
-        console.log(data);
-        return data;
-      }),
-      E.mapLeft(errs => collectErrors(errs))
+      E.bimap(
+        errs => collectErrors(errs),
+        goodData => {
+          console.log(goodData);
+          return data;
+        }
+      )
     );
 }
 
@@ -37,17 +41,16 @@ export function collectErrors(
   return err.reduce(
     (prev, current) => {
       const currError = prev[current.field];
-      if (currError !== undefined) {
-        return {
-          ...prev,
-          [current.field]: [...currError, current.error]
-        };
-      }
+      // console.log("currError", { currError, prev, current });
       return {
         ...prev,
-        [current.field]: [current.error]
+        [current.field]: [...currError, current.error]
       };
     },
-    {} as Record<string, string[]>
+    {
+      email: [],
+      password1: [],
+      password2: []
+    } as Record<string, string[]>
   );
 }
