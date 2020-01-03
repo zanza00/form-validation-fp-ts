@@ -77,6 +77,7 @@ export default function Form() {
       ? E.right(data)
       : E.left({ field: "password2", error: "password is not the same" });
 
+  // add every error in the accumulator
   const errorAccumulator = validateErrorMap([
     validEmail,
     validDomain,
@@ -93,14 +94,22 @@ export default function Form() {
       errorAccumulator(form),
       E.fold(
         e => {
+          // We have some errors se we display them
           setErrorMap(e);
         },
-        fd => {
-          setValidData(fd);
+        validFormData => {
+          // here we have a cliend side valid data, we can submit to the endpoint
+          setValidData(validFormData);
           setErrorMap(initialErrors);
         }
       )
     );
+  }
+
+  function clearForm() {
+    setFormState(initialState);
+    setErrorMap(initialErrors);
+    setDebug({ form: {}, errors: {} });
   }
 
   function fillWithGoodData() {
@@ -159,17 +168,12 @@ export default function Form() {
         </ul>
       </div>
 
+      <button onClick={() => clearForm()}>Clear</button>
       <button onClick={() => validateAndSend(formState)}>Submit</button>
       <div>
-        <ul>
-          {Object.entries(validData).map(([key, value]) => {
-            return (
-              <li key={key}>
-                {key} -> {value}
-              </li>
-            );
-          })}
-        </ul>
+        {Object.keys(validData).length !== 0
+          ? "The form is valid an can be submitted"
+          : ""}
       </div>
       <div>
         <div>
