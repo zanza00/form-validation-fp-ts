@@ -52,7 +52,6 @@ class App extends React.Component<{}, { hasError: boolean }> {
               using the same structure
             </li>
           </ol>
-          <div>Sadly it only works when everything is an error :(</div>
         </div>
         <Form />
       </div>
